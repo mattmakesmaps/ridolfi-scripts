@@ -19,10 +19,11 @@ import arcpy,random
 
 # Setup data sources
 # inputs
-arcpy.env.workspace = "M:/Projects/330A_Bainbridge/Layers/GDB/Strawberry_Plant_Park.gdb"
+arcpy.env.workspace = "M:/Projects/330A_Bainbridge/Layers/GDB/Pritchard_Park_East_Bluff.gdb"
 transectSeed = u'random_transect_seed'
 grid = u'Grid'
-HabTypeVal = 'Marsh'
+quadratHabTypeVal = 'Marsh'
+transectHabTypeVal = 'Riparian'
 # outputs
 finalTransectCellFC = 'transect_cells'
 finalQuadratCellFC = 'quadrat_cells'
@@ -48,8 +49,9 @@ def selectGridLayerGenerate(randCellList, gridLayer, fcOut):
     # Export selected features to new feature class
     arcpy.CopyFeatures_management(gridLayer, fcOut)
 
-def randTransectGenerate(transectSeed, grid):
+def randTransectGenerate(transectSeed, grid, HabType):
     """From seed transects and a grid, generate randomly selected cells."""
+    print "Generating %s transects." % HabType
     # Convert feature classes to layers
     seedLayer = transectSeed + "_TransectSeed_lyr"
     arcpy.MakeFeatureLayer_management(transectSeed, seedLayer)
@@ -62,12 +64,14 @@ def randTransectGenerate(transectSeed, grid):
 
     # Loop through each transect seed based on OBJECTID.
     for row in rows:
-        whereClause = '"OBJECTID" = %s' % row.OBJECTID
-        print "Current Value: %s" % whereClause
+        whereClauseOID = '"OBJECTID" = %s' % row.OBJECTID
+        whereClauseHabType = '"HabType" = \'%s\'' % HabType 
+        print "Current Value: %s" % whereClauseOID
 
         # Select individual seeds based on OBJECTID
-        arcpy.SelectLayerByAttribute_management(seedLayer,"NEW_SELECTION", whereClause)
+        arcpy.SelectLayerByAttribute_management(seedLayer,"NEW_SELECTION", whereClauseOID)
         arcpy.SelectLayerByLocation_management(gridLayer,"INTERSECT", seedLayer, "", "NEW_SELECTION")
+        arcpy.SelectLayerByAttribute_management(gridLayer,"SUBSET_SELECTION", whereClauseHabType)
 
         # Create a list of the intersected page numbers
         selectedCells = arcpy.SearchCursor(gridLayer,"","","PageNumber","")
@@ -85,7 +89,7 @@ def randTransectGenerate(transectSeed, grid):
 
 def randQuadratGenerate(HabTypeVal, grid, quadratCount):
     """For A Specific Habitat Type, Generate a User-Defined Number of Random Quadrats."""
-    print "Generating %s randomly selected quadrats." % str(quadratCount) 
+    print "Generating %d randomly selected %s quadrats" % (quadratCount, HabTypeVal) 
     # Create working layers
     gridLayer = grid + "_Quadrat_lyr"
     arcpy.MakeFeatureLayer_management(grid, gridLayer)
@@ -104,7 +108,6 @@ def randQuadratGenerate(HabTypeVal, grid, quadratCount):
     finalRandCells = []
     setCount = 0
     while setCount < quadratCount:
-    #for i in range(quadratCount):
         randomSelectCell = randomNumber(selectedPageNumbers)
         finalRandCells.append(randomSelectCell)
         setFinalRandCells = list(set(finalRandCells))
@@ -113,5 +116,5 @@ def randQuadratGenerate(HabTypeVal, grid, quadratCount):
     print "Final set of Randomly Selected Cells: %s" % setFinalRandCells
     selectGridLayerGenerate(setFinalRandCells, gridLayer, finalQuadratCellFC)
 
-randTransectGenerate(transectSeed, grid)
-randQuadratGenerate(HabTypeVal, grid, 20)
+randTransectGenerate(transectSeed, grid, transectHabTypeVal)
+randQuadratGenerate(quadratHabTypeVal, grid, 20)
