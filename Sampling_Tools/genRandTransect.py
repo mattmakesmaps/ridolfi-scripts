@@ -19,11 +19,12 @@ import arcpy,random
 
 # Setup data sources
 # inputs
-arcpy.env.workspace = "M:/Projects/330A_Bainbridge/Layers/GDB/Pritchard_Park_East_Bluff.gdb"
+arcpy.env.workspace = "M:/Projects/330A_Bainbridge/Layers/GDB/Strawberry_Plant_Park.gdb"
 transectSeed = u'random_transect_seed'
 grid = u'Grid'
 quadratHabTypeVal = 'Marsh'
 transectHabTypeVal = 'Riparian'
+quadratsRequired = 20
 # outputs
 finalTransectCellFC = 'transect_cells'
 finalQuadratCellFC = 'quadrat_cells'
@@ -117,4 +118,4 @@ def randQuadratGenerate(HabTypeVal, grid, quadratCount):
     selectGridLayerGenerate(setFinalRandCells, gridLayer, finalQuadratCellFC)
 
 randTransectGenerate(transectSeed, grid, transectHabTypeVal)
-randQuadratGenerate(quadratHabTypeVal, grid, 20)
+#randQuadratGenerate(quadratHabTypeVal, grid, quadratsRequired)
