@@ -4,7 +4,6 @@ class RandomGenerator(object):
     """Generate Random Sample Features From a Habitat Type Grid"""
     def __init__(self, workspace):
         arcpy.env.workspace = workspace
-        pass
     
     def randomNumber(self, cellList):
         """Return a random cell from a list"""
@@ -15,6 +14,14 @@ class RandomGenerator(object):
             return randSelect
         except:
             print 'ERROR: INPUT DATA ARE NOT A LIST.'
+            
+    def listSelectedGridCells(self,layer):
+        """For a given layer, return a list of selected features"""
+        selectedCells = arcpy.SearchCursor(layer,"","","PageNumber","")
+        selectedPageNumbers = []
+        for cell in selectedCells:
+            selectedPageNumbers.append(cell.PageNumber)
+        return selectedPageNumbers
     
     def selectGridLayerGenerate(self, randCellList, gridLayer, fcOut):
         """Using a grid and random cell list, make a new feature class."""
@@ -28,7 +35,7 @@ class RandomGenerator(object):
         arcpy.CopyFeatures_management(gridLayer, fcOut)
         print "Finished creating feature class: %s" % fcOut 
     
-    def randTransectGenerate(self, transectSeed, grid, HabType, outputFeatureClass):
+    def randTransectGenerate(self, transectSeed, grid='Grid', HabType=None, outputFeatureClass='Transects'):
         """From seed transects and a grid, generate randomly selected cells."""
         print "Generating %s transects." % HabType
         # Convert feature classes to layers
@@ -52,11 +59,8 @@ class RandomGenerator(object):
             arcpy.SelectLayerByLocation_management(gridLayer,"INTERSECT", seedLayer, "", "NEW_SELECTION")
             arcpy.SelectLayerByAttribute_management(gridLayer,"SUBSET_SELECTION", whereClauseHabType)
     
-            # Create a list of the intersected page numbers
-            selectedCells = arcpy.SearchCursor(gridLayer,"","","PageNumber","")
-            selectedPageNumbers = []
-            for cell in selectedCells:
-                selectedPageNumbers.append(cell.PageNumber)
+            # Create a list of selected cells
+            selectedPageNumbers = self.listSelectedGridCells(gridLayer)
             print "Intersected Cells: %s" % selectedPageNumbers
     
             # Randomly select an intersected cell, append to final list
@@ -66,7 +70,7 @@ class RandomGenerator(object):
         print "Final Randomly Selected Cells: %s" % finalRandCells
         self.selectGridLayerGenerate(finalRandCells, gridLayer, outputFeatureClass)
     
-    def randQuadratGenerate(self, HabTypeVal, grid, quadratCount, outputFeatureClass):
+    def randQuadratGenerate(self, HabTypeVal=None, grid = 'Grid', quadratCount = 20, outputFeatureClass = 'Quadrats'):
         """For A Specific Habitat Type, Generate a User-Defined Number of Random Quadrats."""
         print "Generating %d randomly selected %s quadrats" % (quadratCount, HabTypeVal) 
         # Create working layers
@@ -74,14 +78,15 @@ class RandomGenerator(object):
         arcpy.MakeFeatureLayer_management(grid, gridLayer)
     
         # Select Based on HabType Value of Interest
-        whereClause = '"HabType" = \'%s\'' % HabTypeVal
-        arcpy.SelectLayerByAttribute_management(gridLayer,"NEW_SELECTION", whereClause)
+        if HabTypeVal is None:
+            # No HabTypeVal passed; Use the whole grid.
+            pass
+        else:       
+            whereClause = '"HabType" = \'%s\'' % HabTypeVal
+            arcpy.SelectLayerByAttribute_management(gridLayer,"NEW_SELECTION", whereClause)
     
         # Create a list of selected cells
-        selectedCells = arcpy.SearchCursor(gridLayer,"","","PageNumber","")
-        selectedPageNumbers = []
-        for cell in selectedCells:
-            selectedPageNumbers.append(cell.PageNumber)
+        selectedPageNumbers = self.listSelectedGridCells(gridLayer)
     
         # Random Cell Generate for Desired Range
         finalRandCells = []
